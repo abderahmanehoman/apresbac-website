@@ -49,7 +49,7 @@ export default function Chatbot({ isOpen, onClose }: { isOpen: boolean; onClose:
     setIsLoading(true);
 
     try {
-      // 🚀 قادينا هاد البلاصة وحيدنا منها الكوموندات ديال التيرمينال
+      // 🚀 Your Netlify Route:
       const response = await fetch('/.netlify/functions/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -59,6 +59,15 @@ export default function Chatbot({ isOpen, onClose }: { isOpen: boolean; onClose:
           initialPrompt: INITIAL_PROMPT
         })
       });
+
+      // 🔥 FIX: Safety check before parsing JSON. 
+      // If Netlify routes incorrectly, it returns an HTML 404 page!
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const errorText = await response.text();
+        console.error("Netlify HTML/Text Error:", errorText);
+        throw new Error(`مشكل فالاتصال مع السيرفر (Status: ${response.status}). الفانكشن مابقاتش مقريا مزيان ف Netlify!`);
+      }
 
       const data = await response.json();
 

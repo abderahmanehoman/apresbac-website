@@ -1,13 +1,14 @@
 import { GoogleGenAI } from "@google/genai";
 import type { Handler, HandlerEvent, HandlerContext } from "@netlify/functions";
 
-// Netlify كيقرا المتغيرات البيئية من الإعدادات اللي درتي
+// Netlify reads environment variables from your site settings.
+// Make sure GEMINI_API_KEY is added in the Netlify UI.
 const ai = new GoogleGenAI({ 
-  apiKey: process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY 
+  apiKey: process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY 
 });
 
 export const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
-  // كنقبلو غير الطلبات ديال POST
+  // Only accept POST requests
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
@@ -22,7 +23,7 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
     }));
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash", // الموديل اللي درتي فالسيرفور ديالك
+      model: "gemini-2.0-flash", 
       contents: [
         { role: 'user', parts: [{ text: initialPrompt }] },
         { role: 'model', parts: [{ text: "أنا الموجه الذكي، واجد باش نعاون التلاميذ المغاربة." }] },
