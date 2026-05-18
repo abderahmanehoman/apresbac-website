@@ -50,7 +50,8 @@ export default function Chatbot({ isOpen, onClose }: { isOpen: boolean; onClose:
     setIsLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+      // 🚀 هنا فين تصلح المشكل: استعملنا طريقة Vite باش نقراو الساروت
+      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY || '' });
       
       const chatHistory = messages.map(m => ({
         role: m.role,
