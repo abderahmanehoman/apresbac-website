@@ -23,7 +23,7 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
     }));
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash", 
+      model: "gemini-2.5-flash", 
       contents: [
         { role: 'user', parts: [{ text: initialPrompt }] },
         { role: 'model', parts: [{ text: "أنا الموجه الذكي، واجد باش نعاون التلاميذ المغاربة." }] },
