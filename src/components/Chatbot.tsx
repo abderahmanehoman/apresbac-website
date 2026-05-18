@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { GoogleGenAI } from '@google/genai';
 import ReactMarkdown from 'react-markdown';
 import { Send, X, Bot, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -50,29 +49,31 @@ export default function Chatbot({ isOpen, onClose }: { isOpen: boolean; onClose:
     setIsLoading(true);
 
     try {
-      // 🚀 هنا فين تصلح المشكل: استعملنا طريقة Vite باش نقراو الساروت
-      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY || '' });
-      
-      const chatHistory = messages.map(m => ({
-        role: m.role,
-        parts: [{ text: m.content }]
-      }));
-
-      const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash",
-        contents: [
-          { role: 'user', parts: [{ text: INITIAL_PROMPT }] },
-          { role: 'model', parts: [{ text: "أنا الموجه الذكي، واجد باش نعاون التلاميذ المغاربة." }] },
-          ...chatHistory,
-          { role: 'user', parts: [{ text: userMsg }] }
-        ],
+      // 🚀 قادينا هاد البلاصة وحيدنا منها الكوموندات ديال التيرمينال
+      const response = await fetch('/.netlify/functions/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages,
+          userMsg,
+          initialPrompt: INITIAL_PROMPT
+        })
       });
 
-      const text = response.text || "سمح ليا، وقع واحد المشكل صغير. عاود صيفط ليا ميساج!";
-      setMessages(prev => [...prev, { role: 'model', content: text }]);
-    } catch (error) {
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Network response was not ok');
+      }
+      
+      if (data.error) {
+        setMessages(prev => [...prev, { role: 'model', content: data.error }]);
+      } else {
+        setMessages(prev => [...prev, { role: 'model', content: data.text }]);
+      }
+    } catch (error: any) {
       console.error(error);
-      setMessages(prev => [...prev, { role: 'model', content: "كاين شوية ديال الزحام، واقيلا السيرفر عيا شوية. عاود صيفط ليا ميساج بطل!" }]);
+      setMessages(prev => [...prev, { role: 'model', content: error.message || "كاين شوية ديال الزحام، واقيلا السيرفر عيا شوية. عاود صيفط ليا ميساج بطل!" }]);
     } finally {
       setIsLoading(false);
     }
@@ -86,10 +87,10 @@ export default function Chatbot({ isOpen, onClose }: { isOpen: boolean; onClose:
             initial={{ opacity: 0, scale: 0.9, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            className="bg-white text-dark w-full max-w-lg h-[80vh] rounded-3xl flex flex-col overflow-hidden shadow-2xl relative"
+            className="bg-white text-slate-900 w-full max-w-lg h-[80vh] rounded-3xl flex flex-col overflow-hidden shadow-2xl relative"
           >
             {/* Header */}
-            <div className="p-4 border-b flex items-center justify-between bg-primary text-white">
+            <div className="p-4 border-b flex items-center justify-between bg-blue-600 text-white">
               <div className="flex items-center gap-3">
                 <div className="bg-white/20 p-2 rounded-full">
                   <Bot size={20} />
@@ -121,12 +122,12 @@ export default function Chatbot({ isOpen, onClose }: { isOpen: boolean; onClose:
                     className={cn(
                       "max-w-[85%] p-3 rounded-2xl text-sm leading-relaxed",
                       msg.role === 'user'
-                        ? "bg-primary text-white rounded-tr-none"
-                        : "bg-white border rounded-tl-none shadow-sm"
+                        ? "bg-blue-600 text-white rounded-tr-none"
+                        : "bg-white border text-slate-700 rounded-tl-none shadow-sm"
                     )}
                   >
                     {msg.role === 'model' ? (
-                      <div className="bot-msg-markdown">
+                      <div className="text-sm space-y-2 [&>p]:mb-2 [&>ul]:list-disc [&>ul]:ml-4">
                         <ReactMarkdown>{msg.content}</ReactMarkdown>
                       </div>
                     ) : (
@@ -142,17 +143,17 @@ export default function Chatbot({ isOpen, onClose }: { isOpen: boolean; onClose:
                       <motion.div
                         animate={{ opacity: [0.3, 1, 0.3] }}
                         transition={{ repeat: Infinity, duration: 1 }}
-                        className="w-1.5 h-1.5 bg-primary rounded-full"
+                        className="w-1.5 h-1.5 bg-blue-600 rounded-full"
                       />
                       <motion.div
                         animate={{ opacity: [0.3, 1, 0.3] }}
                         transition={{ repeat: Infinity, duration: 1, delay: 0.2 }}
-                        className="w-1.5 h-1.5 bg-primary rounded-full"
+                        className="w-1.5 h-1.5 bg-blue-600 rounded-full"
                       />
                       <motion.div
                         animate={{ opacity: [0.3, 1, 0.3] }}
                         transition={{ repeat: Infinity, duration: 1, delay: 0.4 }}
-                        className="w-1.5 h-1.5 bg-primary rounded-full"
+                        className="w-1.5 h-1.5 bg-blue-600 rounded-full"
                       />
                     </div>
                   </div>
@@ -169,12 +170,12 @@ export default function Chatbot({ isOpen, onClose }: { isOpen: boolean; onClose:
                   onChange={(e) => setInput(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSend()}
                   placeholder="كتب سؤالك هنا بطل..."
-                  className="flex-1 px-4 py-2 border rounded-xl outline-none focus:border-primary transition-colors text-sm"
+                  className="flex-1 px-4 py-2 border rounded-xl outline-none focus:border-blue-600 transition-colors text-sm"
                 />
                 <button
                   onClick={handleSend}
                   disabled={isLoading || !input.trim()}
-                  className="bg-primary text-white p-2 px-4 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="bg-blue-600 text-white p-2 px-4 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Send size={18} />
                 </button>
