@@ -19,7 +19,7 @@ const supabaseKey = 'sb_publishable_XlA7CgWOatF8bNE2DNUvPA_wBVYyXVy';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Use the new SDK for Gemini as per AI Studio setup
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "AIzaSyAw_IejK5-L0PQb3kH-D_dzOK5Jl7ItSC8" });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "process.env.GEMINI_API_KEY" });
 
 // ==========================================
 // 2. Targeted Websites & Extractors
