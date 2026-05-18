@@ -2,13 +2,11 @@ import { GoogleGenAI } from "@google/genai";
 import type { Handler, HandlerEvent, HandlerContext } from "@netlify/functions";
 
 // Netlify reads environment variables from your site settings.
-// Make sure GEMINI_API_KEY is added in the Netlify UI.
 const ai = new GoogleGenAI({ 
   apiKey: process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY 
 });
 
 export const handler: Handler = async (event: HandlerEvent, context: HandlerContext) => {
-  // Only accept POST requests
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, body: "Method Not Allowed" };
   }
@@ -22,17 +20,48 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
       parts: [{ text: m.content }]
     }));
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash", 
-      contents: [
-        { role: 'user', parts: [{ text: initialPrompt }] },
-        { role: 'model', parts: [{ text: "أنا الموجه الذكي، واجد باش نعاون التلاميذ المغاربة." }] },
-        ...chatHistory,
-        { role: 'user', parts: [{ text: userMsg }] }
-      ],
-    });
+    // 🚀 المصفوفة الكبيرة والذكية لتجربة كاع الموديلات المتاحة بالتتابع (من الأقوى للأخف)
+    const modelsToTry = [
+      "gemini-3.1-pro-preview",
+      "gemini-3.1-flash-preview",
+      "gemini-2.5-pro",
+      "gemini-2.5-flash",
+      "gemini-2.0-pro",
+      "gemini-2.0-flash",
+      "gemini-1.5-pro",
+      "gemini-1.5-flash",git add .
 
-    const text = response.text || "سمح ليا، وقع واحد المشكل صغير. عاود صيفط ليا ميساج!";
+    ];
+    let response: any = null;
+    let successfulModel = "";
+    let lastError: any = null;
+
+    for (const modelName of modelsToTry) {
+      try {
+        response = await ai.models.generateContent({
+          model: modelName, 
+          contents: [
+            { role: 'user', parts: [{ text: initialPrompt }] },
+            { role: 'model', parts: [{ text: "أنا الموجه الذكي، واجد باش نعاون التلاميذ المغاربة." }] },
+            ...chatHistory,
+            { role: 'user', parts: [{ text: userMsg }] }
+          ],
+        });
+        
+        successfulModel = modelName;
+        break; 
+      } catch (err) {
+        console.error(`فشل الموديل ${modelName}، غندوزو للتالي:`, err);
+        lastError = err;
+      }
+    }
+
+    if (!response || !successfulModel) {
+      throw lastError || new Error("جميع الموديلات المتاحة فشلت في الاستجابة");
+    }
+
+    const originalText = response.text || "سمح ليا، وقع واحد المشكل صغير. عاود صيفط ليا ميساج!";
+    const text = `${originalText}\n\n*(🤖 تمت الإجابة بواسطة: ${successfulModel})*`;
 
     return {
       statusCode: 200,
