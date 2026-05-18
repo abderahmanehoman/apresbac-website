@@ -59,7 +59,7 @@ export default function Chatbot({ isOpen, onClose }: { isOpen: boolean; onClose:
       }));
 
       const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
+        model: "gemini-2.5-flash",
         contents: [
           { role: 'user', parts: [{ text: INITIAL_PROMPT }] },
           { role: 'model', parts: [{ text: "أنا الموجه الذكي، واجد باش نعاون التلاميذ المغاربة." }] },
