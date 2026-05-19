@@ -31,10 +31,7 @@ export const handler: Handler = async (event: HandlerEvent, context: HandlerCont
       ],
     });
 
-    const originalText = response.text || "سمح ليا، وقع واحد المشكل صغير. عاود صيفط ليا ميساج!";
-    
-    // خليت ليك هاد التيكيتة لتحت باش ديما يبان ليك شكون اللي جاوب
-    const text = `${originalText}\n\n*(🤖 تمت الإجابة بواسطة: gemini-2.5-flash)*`;
+    const text = response.text || "سمح ليا، وقع واحد المشكل صغير. عاود صيفط ليا ميساج!";
 
     return {
       statusCode: 200,
