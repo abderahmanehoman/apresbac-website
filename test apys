@@ -1,0 +1,115 @@
+import requests
+from docx import Document
+from docx.shared import Pt, RGBColor
+import datetime
+
+# 🔐 السوارت ديالك مع الحالة ديالهم
+API_KEYS = [
+    {"key": "AIzaSyD1QLzSdvcJWXzuLD5R5HQZd_6-hN6d5AA", "tier": "Free Tier"},
+    {"key": "AIzaSyCp1cmP69vyoYgjwEnmEZrDbrxoQWnhotk", "tier": "Billing Tier (-0.5$)"},
+    {"key": "AIzaSyAw_IejK5-L0PQb3kH-D_dzOK5Jl7ItSC8", "tier": "Billing Tier (2$)"}
+]
+
+def check_key_status(api_key):
+    """تجربة الساروت بسؤال بسيط للتأكد واش يقدر يجاوب أو محبوس بسبب الرصيد"""
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+    payload = {"contents": [{"parts": [{"text": "Hello"}]}]}
+    
+    try:
+        res = requests.post(url, json=payload)
+        if res.status_code == 200:
+            return "✅ Active (Working Perfectly)"
+        elif res.status_code == 429:
+            return "⚠️ Rate Limited / Quota Exceeded (Check Billing or Limits)"
+        elif res.status_code in [400, 403]:
+            return "❌ API Key Invalid or Disabled"
+        else:
+            return f"❓ Unknown Status ({res.status_code})"
+    except Exception as e:
+        return f"Error connecting: {e}"
+
+def get_available_models(api_key):
+    """جلب أحدث الموديلات المتاحة لهذا الساروت مع حدود التوكنز"""
+    url = f"https://generativelanguage.googleapis.com/v1beta/models?key={api_key}"
+    try:
+        res = requests.get(url)
+        if res.status_code == 200:
+            models = res.json().get('models', [])
+            # غنصفيو غير الموديلات ديال Gemini المتاحة للذكاء الاصطناعي
+            gemini_models = [m for m in models if 'gemini' in m.get('name', '').lower()]
+            return gemini_models, None
+        else:
+            return None, res.json().get('error', {}).get('message', 'Unknown Error')
+    except Exception as e:
+        return None, str(e)
+
+def create_word_report():
+    print("🚀 جاري فحص السوارت واستخراج البيانات... المرجو الانتظار.")
+    
+    doc = Document()
+    doc.add_heading('Gemini API Keys - Status & Models Report', 0)
+    
+    date_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    doc.add_paragraph(f"Report Generated On: {date_str}")
+    
+    for item in API_KEYS:
+        key = item['key']
+        tier = item['tier']
+        masked_key = f"{key[:10]}...{key[-5:]}"
+        
+        print(f"\n🔍 جاري فحص: {masked_key} ({tier})")
+        
+        # إضافة عنوان الساروت للـ Word
+        doc.add_heading(f"Key: {masked_key}", level=1)
+        doc.add_paragraph(f"Expected Tier: {tier}")
+        
+        # فحص حالة الساروت
+        status = check_key_status(key)
+        p = doc.add_paragraph("Live Status: ")
+        status_run = p.add_run(status)
+        status_run.bold = True
+        
+        if "Active" in status:
+            status_run.font.color.rgb = RGBColor(0, 150, 0) # أخضر
+        else:
+            status_run.font.color.rgb = RGBColor(200, 0, 0) # أحمر
+            
+        # جلب الموديلات
+        models, error = get_available_models(key)
+        
+        if models:
+            doc.add_heading("Available Models & Token Limits:", level=2)
+            
+            # إنشاء جدول في الـ Word
+            table = doc.add_table(rows=1, cols=3)
+            table.style = 'Table Grid'
+            hdr_cells = table.rows[0].cells
+            hdr_cells[0].text = 'Model Name'
+            hdr_cells[1].text = 'Max Input Tokens'
+            hdr_cells[2].text = 'Max Output Tokens'
+            
+            for m in models:
+                name = m.get('name', '').replace('models/', '')
+                in_tokens = str(m.get('inputTokenLimit', 'N/A'))
+                out_tokens = str(m.get('outputTokenLimit', 'N/A'))
+                
+                row_cells = table.add_row().cells
+                row_cells[0].text = name
+                row_cells[1].text = in_tokens
+                row_cells[2].text = out_tokens
+                
+            doc.add_paragraph(f"\nTotal Gemini Models Found: {len(models)}")
+        else:
+            doc.add_paragraph(f"⚠️ Could not fetch models. Error: {error}")
+            
+        doc.add_page_break() # صفحة جديدة لكل ساروت
+
+    # حفظ الملف
+    file_name = "Gemini_API_Report.docx"
+    doc.save(file_name)
+    print("\n" + "=" * 50)
+    print(f"🏁 انتهى الفحص! تم حفظ النتائج بنجاح في ملف: {file_name}")
+    print("=" * 50)
+
+if __name__ == "__main__":
+    create_word_report()
